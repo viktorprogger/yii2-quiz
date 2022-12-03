@@ -20,7 +20,7 @@
   },
   "autoload": {
     "psr-4": {
-      "app\\modules\\quiz": "src"
+      "app\\modules\\poll": "src"
     }
   }
 }

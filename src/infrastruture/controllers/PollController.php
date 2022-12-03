@@ -2,32 +2,30 @@
 
 declare(strict_types=1);
 
-namespace app\modules\quiz\infrastruture\controllers;
+namespace app\modules\poll\infrastruture\controllers;
 
-use app\modules\quiz\domain\entities\AnswerChange;
-use app\modules\quiz\domain\entities\QuestionChangeCustom;
-use app\modules\quiz\domain\entities\QuestionChangeInterface;
-use app\modules\quiz\domain\entities\QuestionChangeRated;
-use app\modules\quiz\domain\entities\Quiz;
-use app\modules\quiz\domain\entities\QuizChange;
-use app\modules\quiz\domain\entities\QuizRepositoryInterface;
+use app\modules\poll\domain\entities\poll\AnswerChange;
+use app\modules\poll\domain\entities\poll\Poll;
+use app\modules\poll\domain\entities\poll\PollChange;
+use app\modules\poll\domain\entities\poll\QuestionChangeCustom;
+use app\modules\poll\domain\entities\poll\QuestionChangeInterface;
+use app\modules\poll\domain\entities\poll\QuestionChangeRated;
+use app\modules\poll\domain\entities\PollRepositoryInterface;
 use DateTimeImmutable;
 use InvalidArgumentException;
-use JsonSerializable;
 use Yii;
 use yii\filters\auth\HttpBearerAuth;
 use yii\web\BadRequestHttpException;
 use yii\web\Controller;
-use yii\web\HttpException;
 
-final class QuizController extends Controller
+final class PollController extends Controller
 {
-    private QuizRepositoryInterface $quizRepository;
+    private PollRepositoryInterface $pollRepository;
 
-    public function __construct($id, $module, QuizRepositoryInterface $quizRepository, $config = [])
+    public function __construct($id, $module, PollRepositoryInterface $pollRepository, $config = [])
     {
         parent::__construct($id, $module, $config);
-        $this->quizRepository = $quizRepository;
+        $this->pollRepository = $pollRepository;
     }
 
     public function behaviors(): array
@@ -40,15 +38,15 @@ final class QuizController extends Controller
         return $behaviors;
     }
 
-    public function actionGetQuiz(): Quiz
+    public function actionGetQuiz(): Poll
     {
-        return $this->quizRepository->getActiveForUser(Yii::$app->user->id);
+        return $this->pollRepository->getActiveForUser(Yii::$app->user->id);
     }
 
     /**
      * Quiz creation endpoint
      *
-     * @param array $quiz The following JSON structure:
+     * @param array $poll The following JSON structure:
      * ```yaml
      * title: string, # required
      * publishedFrom: int, # timestamp, required
@@ -68,20 +66,20 @@ final class QuizController extends Controller
      * ]
      * ```
      *
-     * @return Quiz
+     * @return Poll
      *
      * @throws BadRequestHttpException
      */
-    public function actionCreate(array $quiz): Quiz
+    public function actionCreate(array $poll): Poll
     {
-        return $this->quizRepository->create($this->createQuizFromArray($quiz));
+        return $this->pollRepository->create($this->createQuizFromArray($poll));
     }
 
     /**
      * Quiz update endpoint
      *
-     * @param int $id Id of the quiz to update
-     * @param array $quiz The following JSON structure:
+     * @param int $id Id of the poll to update
+     * @param array $poll The following JSON structure:
      * ```yaml
      * title: string, # required
      * publishedFrom: int, # timestamp, required
@@ -101,42 +99,42 @@ final class QuizController extends Controller
      * ]
      * ```
      *
-     * @return Quiz
+     * @return Poll
      *
      * @throws BadRequestHttpException
      */
-    public function actionUpdate(int $id, array $quiz): Quiz
+    public function actionUpdate(int $id, array $poll): Poll
     {
-        return $this->quizRepository->update($id, $this->createQuizFromArray($quiz));
+        return $this->pollRepository->update($id, $this->createQuizFromArray($poll));
     }
 
-    private function createQuizFromArray(array $quiz): QuizChange
+    private function createQuizFromArray(array $poll): PollChange
     {
-        if (!isset($quiz['title']) || !is_string($quiz['title'])) {
+        if (!isset($poll['title']) || !is_string($poll['title'])) {
             throw new BadRequestHttpException('Quiz title must be a string');
         }
 
-        if (!isset($quiz['publishedFrom']) || !is_int($quiz['publishedFrom'])) {
+        if (!isset($poll['publishedFrom']) || !is_int($poll['publishedFrom'])) {
             throw new BadRequestHttpException('Quiz publish start datetime must be a valid timestamp');
         }
 
-        if (!isset($quiz['publishedTo']) || !is_int($quiz['publishedTo'])) {
+        if (!isset($poll['publishedTo']) || !is_int($poll['publishedTo'])) {
             throw new BadRequestHttpException('Quiz publish end datetime must be a valid timestamp');
         }
 
         $questions = [];
         try {
-            foreach ($quiz['questions'] as $index => $definition) {
+            foreach ($poll['questions'] as $index => $definition) {
                 $questions[] = $this->createQuestionFromArray($definition);
             }
         } catch (InvalidArgumentException $exception) {
             throw new BadRequestHttpException("Question #$index structure is invalid", 0, $exception);
         }
 
-        return new QuizChange(
-           $quiz['title'],
-           (new DateTimeImmutable())->setTimestamp($quiz['publishedFrom']),
-           (new DateTimeImmutable())->setTimestamp($quiz['publishedTo']),
+        return new PollChange(
+               $poll['title'],
+               (new DateTimeImmutable())->setTimestamp($poll['publishedFrom']),
+               (new DateTimeImmutable())->setTimestamp($poll['publishedTo']),
             ...$questions
         );
     }

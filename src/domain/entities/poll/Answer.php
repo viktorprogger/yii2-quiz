@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace app\modules\quiz\domain\entities;
+namespace app\modules\poll\domain\entities\poll;
 
 use JsonSerializable;
 

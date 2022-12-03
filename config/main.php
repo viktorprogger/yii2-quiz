@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use app\modules\quiz\domain\entities\QuizRepositoryInterface;
+use app\modules\poll\domain\entities\PollRepositoryInterface;
 
 return [
     'container' => [
         'singletons' => [
-            QuizRepositoryInterface::class => '',
+            PollRepositoryInterface::class => '',
         ],
     ],
 ];

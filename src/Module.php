@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace app\modules\quiz;
+namespace app\modules\poll;
 
 use yii\base\Module as BaseModule;
 
