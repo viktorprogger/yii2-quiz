@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace app\modules\poll\infrastruture\controllers;
 
+use app\modules\poll\domain\entities\clientAnswer\ClientAnswer;
+use app\modules\poll\domain\entities\clientAnswer\ClientAnswerChange;
+use app\modules\poll\domain\entities\clientAnswer\QuestionAnswer;
 use app\modules\poll\domain\entities\poll\AnswerChange;
 use app\modules\poll\domain\entities\poll\Poll;
 use app\modules\poll\domain\entities\poll\PollChange;
@@ -17,6 +20,8 @@ use Yii;
 use yii\filters\auth\HttpBearerAuth;
 use yii\web\BadRequestHttpException;
 use yii\web\Controller;
+use yii\web\Response;
+use yii\web\User;
 
 final class PollController extends Controller
 {
@@ -106,6 +111,56 @@ final class PollController extends Controller
     public function actionUpdate(int $id, array $poll): Poll
     {
         return $this->pollRepository->update($id, $this->createQuizFromArray($poll));
+    }
+
+    /**
+     * @param int $pollId Id of an answered poll
+     * @param array $answers Array of answers in a such form: [questionId => int, answerId => int]. All the keys are
+     *     required
+     * @param User $user Current user component, injected via DI container
+     * @param Response $response Current response object, injected via DI container
+     *
+     * @return Response
+     *
+     * @throws BadRequestHttpException
+     */
+    public function actionAnswer(int $pollId, array $answers, User $user, Response $response): Response
+    {
+        $answerCollection = [];
+        foreach ($answers as $index => $definition) {
+            if (!isset($definition['questionId']) || !is_int($definition['questionId'])) {
+                throw new BadRequestHttpException("QuestionId must be an integer, error in answer #$index");
+            }
+            if (!isset($definition['answerId']) || !is_int($definition['answerId'])) {
+                throw new BadRequestHttpException("AnswerId must be an integer, error in answer #$index");
+            }
+
+            $answerCollection[] = new QuestionAnswer($definition['questionId'], $definition['answerId']);
+        }
+
+        $clientAnswer = new ClientAnswerChange(
+            $pollId,
+            $user->getId(),
+            $user->getLiscenseId(), // FIXME
+            ...$answerCollection
+        );
+        $this->pollRepository->addAnswer($clientAnswer);
+
+        return $response->setStatusCode(201);
+    }
+
+    /**
+     * @param int $pollId Id of the poll to reject
+     * @param User $user Current user component, injected via DI container
+     * @param Response $response Current response object, injected via DI container
+     *
+     * @return Response
+     */
+    public function actionReject(int $pollId, User $user, Response $response): Response
+    {
+        $this->pollRepository->addRejection($pollId, $user->getId(), $user->getLicenseId()); // FIXME
+
+        return $response->setStatusCode(201);
     }
 
     private function createQuizFromArray(array $poll): PollChange
