@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace app\modules\poll\infrastruture\controllers;
 
-use app\modules\poll\domain\entities\clientAnswer\ClientAnswer;
 use app\modules\poll\domain\entities\clientAnswer\ClientAnswerChange;
 use app\modules\poll\domain\entities\clientAnswer\QuestionAnswer;
 use app\modules\poll\domain\entities\poll\AnswerChange;
