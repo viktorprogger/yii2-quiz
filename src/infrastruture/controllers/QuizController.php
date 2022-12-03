@@ -60,7 +60,7 @@ final class QuizController extends Controller
      *     answers: [ # required for type === custom, ignored for type === rated
      *       {
      *         text: string, # required,
-     *         sort: int, # required; the less is value, the higher this answer will be positioned
+     *         sort: int, # required; the less value is, the higher this answer will be positioned
      *         canBeCommented: bool, # required; user can comment the answer when value is true
      *       }
      *     ],
@@ -75,6 +75,39 @@ final class QuizController extends Controller
     public function actionCreate(array $quiz): Quiz
     {
         return $this->quizRepository->create($this->createQuizFromArray($quiz));
+    }
+
+    /**
+     * Quiz update endpoint
+     *
+     * @param int $id Id of the quiz to update
+     * @param array $quiz The following JSON structure:
+     * ```yaml
+     * title: string, # required
+     * publishedFrom: int, # timestamp, required
+     * publishedTo: int, # timestamp, required
+     * questions: [
+     *   {
+     *     type: string, # enum<custom|rated>, required
+     *     text: string, # required
+     *     answers: [ # required for type === custom, ignored for type === rated
+     *       {
+     *         text: string, # required,
+     *         sort: int, # required; the less value is, the higher this answer will be positioned
+     *         canBeCommented: bool, # required; user can comment the answer when value is true
+     *       }
+     *     ],
+     *   }
+     * ]
+     * ```
+     *
+     * @return Quiz
+     *
+     * @throws BadRequestHttpException
+     */
+    public function actionUpdate(int $id, array $quiz): Quiz
+    {
+        return $this->quizRepository->update($id, $this->createQuizFromArray($quiz));
     }
 
     private function createQuizFromArray(array $quiz): QuizChange
