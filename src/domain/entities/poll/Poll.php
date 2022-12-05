@@ -14,6 +14,10 @@ final class Poll implements JsonSerializable
     private DateTimeImmutable $publishedFrom;
     private DateTimeImmutable $publishedTo;
     /**
+     * @var int[]
+     */
+    private array $userIds;
+    /**
      * @var Question[]
      */
     private array $questions;
@@ -23,12 +27,14 @@ final class Poll implements JsonSerializable
         string $title,
         DateTimeImmutable $publishedFrom,
         DateTimeImmutable $publishedTo,
+        array $userIds,
         Question ...$questions
     ) {
         $this->id = $id;
         $this->title = $title;
         $this->publishedFrom = $publishedFrom;
         $this->publishedTo = $publishedTo;
+        $this->userIds = $userIds;
         $this->questions = $questions;
     }
 
@@ -70,6 +76,14 @@ final class Poll implements JsonSerializable
     public function getQuestions(): array
     {
         return $this->questions;
+    }
+
+    /**
+     * @return int[]
+     */
+    public function getUserIds(): array
+    {
+        return $this->userIds;
     }
 
     public function jsonSerialize(): array

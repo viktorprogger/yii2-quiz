@@ -11,8 +11,6 @@ use app\modules\poll\domain\entities\poll\PollChange;
 
 interface PollRepositoryInterface
 {
-    public function addRejection(int $pollId, int $getId, $getLicenseId): void;
-
     public function create(PollChange $poll): Poll;
 
     public function update(int $id, PollChange $poll): Poll;
@@ -21,5 +19,5 @@ interface PollRepositoryInterface
 
     public function addAnswer(ClientAnswerChange $answer): ClientAnswer;
 
-    public function getAnswer(int $id): ClientAnswer;
+    public function addRejection(int $pollId, int $getId, $getLicenseId): void;
 }

@@ -55,6 +55,7 @@ final class PollController extends Controller
      * title: string, # required
      * publishedFrom: int, # timestamp, required
      * publishedTo: int, # timestamp, required
+     * userIds: int[], # Array of ids of users who will see this poll, optional
      * questions: [
      *   {
      *     type: string, # enum<custom|rated>, required
@@ -76,7 +77,7 @@ final class PollController extends Controller
      */
     public function actionCreate(array $poll): Poll
     {
-        return $this->pollRepository->create($this->createQuizFromArray($poll));
+        return $this->pollRepository->create($this->createPollFromArray($poll));
     }
 
     /**
@@ -88,6 +89,7 @@ final class PollController extends Controller
      * title: string, # required
      * publishedFrom: int, # timestamp, required
      * publishedTo: int, # timestamp, required
+     * userIds: int[], # Array of ids of users who will see this poll, optional
      * questions: [
      *   {
      *     type: string, # enum<custom|rated>, required
@@ -109,7 +111,7 @@ final class PollController extends Controller
      */
     public function actionUpdate(int $id, array $poll): Poll
     {
-        return $this->pollRepository->update($id, $this->createQuizFromArray($poll));
+        return $this->pollRepository->update($id, $this->createPollFromArray($poll));
     }
 
     /**
@@ -162,7 +164,7 @@ final class PollController extends Controller
         return $response->setStatusCode(201);
     }
 
-    private function createQuizFromArray(array $poll): PollChange
+    private function createPollFromArray(array $poll): PollChange
     {
         if (!isset($poll['title']) || !is_string($poll['title'])) {
             throw new BadRequestHttpException('Quiz title must be a string');
@@ -176,6 +178,16 @@ final class PollController extends Controller
             throw new BadRequestHttpException('Quiz publish end datetime must be a valid timestamp');
         }
 
+        if (isset($poll['userIds']) && !is_array($poll['userIds'])) {
+            throw new BadRequestHttpException('Quiz userIds field must be an array of positive integers');
+        }
+
+        foreach ($poll['userIds'] as $index => $userId) {
+            if (!is_int($userId) || $userId < 1) {
+                throw new BadRequestHttpException("Quiz userIds field must be an array of positive integers, $userId given in key #$index");
+            }
+        }
+
         $questions = [];
         try {
             foreach ($poll['questions'] as $index => $definition) {
@@ -186,9 +198,10 @@ final class PollController extends Controller
         }
 
         return new PollChange(
-               $poll['title'],
-               (new DateTimeImmutable())->setTimestamp($poll['publishedFrom']),
-               (new DateTimeImmutable())->setTimestamp($poll['publishedTo']),
+           $poll['title'],
+           (new DateTimeImmutable())->setTimestamp($poll['publishedFrom']),
+           (new DateTimeImmutable())->setTimestamp($poll['publishedTo']),
+           $poll['userIds'],
             ...$questions
         );
     }

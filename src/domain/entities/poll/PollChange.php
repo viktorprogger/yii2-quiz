@@ -12,6 +12,10 @@ final class PollChange
     private DateTimeImmutable $publishedFrom;
     private DateTimeImmutable $publishedTo;
     /**
+     * @var int[]
+     */
+    private array $userIds;
+    /**
      * @var QuestionChangeInterface[]
      */
     private array $questions;
@@ -20,11 +24,13 @@ final class PollChange
         string $title,
         DateTimeImmutable $publishedFrom,
         DateTimeImmutable $publishedTo,
+        array $userIds,
         QuestionChangeInterface ...$questions
     ) {
         $this->title = $title;
         $this->publishedFrom = $publishedFrom;
         $this->publishedTo = $publishedTo;
+        $this->userIds = $userIds;
         $this->questions = $questions;
     }
 
@@ -49,5 +55,13 @@ final class PollChange
     public function getQuestions(): array
     {
         return $this->questions;
+    }
+
+    /**
+     * @return int[]
+     */
+    public function getUserIds(): array
+    {
+        return $this->userIds;
     }
 }
