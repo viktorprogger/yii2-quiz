@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace app\modules\poll\domain\entities\poll;
 
+use app\modules\poll\domain\entities\exceptions\DomainDataCorruptionException;
 use JsonSerializable;
 
 final class Answer implements JsonSerializable
@@ -15,10 +16,22 @@ final class Answer implements JsonSerializable
 
     public function __construct(int $id, int $sort, string $text, bool $canBeCommented)
     {
+        $this->validate($id, $text);
+
         $this->id = $id;
         $this->sort = $sort;
         $this->text = $text;
         $this->canBeCommented = $canBeCommented;
+    }
+
+    private function validate(int $id, string $text): void
+    {
+        if ($id < 1) {
+            throw new DomainDataCorruptionException("Entity ID must be a positive integer, given '$id'");
+        }
+        if (mb_strlen($text) < 5) {
+            throw new DomainDataCorruptionException("Answer text must be a non-empty string");
+        }
     }
 
     public function getId(): int

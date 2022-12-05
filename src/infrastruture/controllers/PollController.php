@@ -214,8 +214,8 @@ final class PollController extends Controller
 
         switch ($question['type']) {
             case 'rated':
-                if (!isset($question['maximum']) || !is_int($question['maximum']) || $question['maximum'] < 2) {
-                    throw new InvalidArgumentException('Maximum rating must be an integer above 1');
+                if (!isset($question['maximum']) || !is_int($question['maximum']) || $question['maximum'] < 1) {
+                    throw new InvalidArgumentException('Maximum rating must be a positive integer');
                 }
                 
                 if (!isset($question['dontCommentSince']) || !is_int($question['dontCommentSince']) || $question['dontCommentSince'] < 1) {

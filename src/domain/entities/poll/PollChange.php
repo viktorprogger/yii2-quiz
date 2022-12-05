@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace app\modules\poll\domain\entities\poll;
 
+use app\modules\poll\domain\entities\exceptions\DomainDataCorruptionException;
 use DateTimeImmutable;
 
 final class PollChange
@@ -27,11 +28,28 @@ final class PollChange
         array $userIds,
         QuestionChangeInterface ...$questions
     ) {
+        $this->validate($title, $publishedFrom, $publishedTo);
+
         $this->title = $title;
         $this->publishedFrom = $publishedFrom;
         $this->publishedTo = $publishedTo;
         $this->userIds = $userIds;
         $this->questions = $questions;
+    }
+
+    private function validate(
+        string $title,
+        DateTimeImmutable $publishedFrom,
+        DateTimeImmutable $publishedTo
+    ): void {
+        if (mb_strlen($title) < 5) {
+            throw new DomainDataCorruptionException(
+                "Poll title must be a string of 5 characters or more, given '$title'"
+            );
+        }
+        if ($publishedFrom->diff($publishedTo)->invert !== 1) {
+            throw new DomainDataCorruptionException("Publish end date must be greater than publish start date");
+        }
     }
 
     public function getTitle(): string

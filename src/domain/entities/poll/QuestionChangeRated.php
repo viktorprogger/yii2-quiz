@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace app\modules\poll\domain\entities\poll;
 
+use app\modules\poll\domain\entities\exceptions\DomainDataCorruptionException;
+
 final class QuestionChangeRated implements QuestionChangeInterface
 {
     private string $text;
@@ -19,6 +21,8 @@ final class QuestionChangeRated implements QuestionChangeInterface
      */
     public function __construct(string $text, int $maximum, int $dontCommentSince)
     {
+        $this->validate($text, $maximum);
+
         $answers = [];
         for ($i = 1; $i <= $maximum; $i++) {
             $answers[] = new AnswerChange($i, (string) $i, $i < $dontCommentSince);
@@ -26,6 +30,18 @@ final class QuestionChangeRated implements QuestionChangeInterface
 
         $this->text = $text;
         $this->answers = $answers;
+    }
+
+    private function validate(string $text, int $maximum): void
+    {
+        if (mb_strlen($text) < 5) {
+            throw new DomainDataCorruptionException(
+                "Question text must be a string of 5 characters or more, given '$text'"
+            );
+        }
+        if ($maximum < 1) {
+            throw new DomainDataCorruptionException("Maximum rating must be a positive integer, given $maximum");
+        }
     }
 
     public function getText(): string
