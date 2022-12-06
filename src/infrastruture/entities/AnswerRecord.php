@@ -6,7 +6,7 @@ namespace app\modules\poll\infrastruture\entities;
 
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
-use yii\db\ActiveQuery;
+use yii\db\ActiveQueryInterface;
 use yii\db\ActiveRecord;
 
 /**
@@ -33,7 +33,7 @@ final class AnswerRecord extends ActiveRecord
     public function rules(): array
     {
         return [
-            ['question_id', 'exists', 'targetRelation' => 'question'],
+            ['question_id', 'exist', 'targetRelation' => 'question'],
             ['deleted', 'default', false],
         ];
     }
@@ -46,7 +46,7 @@ final class AnswerRecord extends ActiveRecord
         ];
     }
 
-    public function getQuestion(): ActiveQuery
+    public function getQuestion(): ActiveQueryInterface
     {
         return $this->hasOne(QuestionRecord::class, ['id' => 'question_id']);
     }

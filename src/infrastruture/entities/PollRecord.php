@@ -7,6 +7,7 @@ namespace app\modules\poll\infrastruture\entities;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
 use yii\db\ActiveQuery;
+use yii\db\ActiveQueryInterface;
 use yii\db\ActiveRecord;
 
 /**
@@ -39,7 +40,7 @@ final class PollRecord extends ActiveRecord
         ];
     }
 
-    public function getQuestions(): ActiveQuery
+    public function getQuestions(): ActiveQueryInterface
     {
         return $this->hasMany(QuestionRecord::class, ['poll_id' => 'id'])->where(['questions.deleted' => false]);
     }

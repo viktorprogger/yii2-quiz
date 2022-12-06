@@ -7,6 +7,8 @@ namespace app\modules\poll\infrastruture\entities;
 use app\modules\poll\domain\entities\clientAnswer\ClientAnswer;
 use app\modules\poll\domain\entities\clientAnswer\ClientAnswerChange;
 use app\modules\poll\domain\entities\exceptions\DomainDataCorruptionException;
+use app\modules\poll\domain\entities\exceptions\EntityNotFoundException;
+use app\modules\poll\domain\entities\exceptions\NotImplementedException;
 use app\modules\poll\domain\entities\poll\Answer;
 use app\modules\poll\domain\entities\poll\Poll;
 use app\modules\poll\domain\entities\poll\PollChange;
@@ -86,14 +88,21 @@ final class PollRepository implements PollRepositoryInterface
 
     public function update(int $id, PollChange $poll): Poll
     {
-        // TODO: Implement update() method.
+        $record = PollRecord::find()->with('questions', 'questions.answers')->andWhere(['poll.deleted' => false])->one(
+        );
+        if ($record === null) {
+            throw new EntityNotFoundException("Poll id #$id not found");
+        }
+
+        // TODO
+        throw new NotImplementedException();
     }
 
     public function getActiveForUser(int $userId): ?Poll
     {
         $query = PollRecord::find()
             ->with('questions', 'questions.answers')
-            ->leftJoin(UserAnswerRecord::tableName() . ' ua', 'ua.poll_id = poll.id')
+            ->leftJoin(ClientAnswerRecord::tableName() . ' ua', 'ua.poll_id = poll.id')
             ->andWhere(['ua.id' => null])
             ->andWhere(['deleted' => false])
             ->orderBy(['published_at' => SORT_ASC]);
@@ -113,9 +122,47 @@ final class PollRepository implements PollRepositoryInterface
         return null;
     }
 
-    public function addAnswer(ClientAnswerChange $answer): ClientAnswer
+    /**
+     * @throws Throwable
+     */
+    public function addAnswer(ClientAnswerChange $answer): void
     {
-        // TODO: Implement addAnswer() method.
+        /** @var Transaction $transaction */
+        $transaction = $this->connection->beginTransaction();
+
+        try {
+            $answerRecord = new ClientAnswerRecord();
+            $answerRecord->setAttributes(
+                [
+                    'user_id' => $answer->getUserId(),
+                    'license_id' => $answer->getLicenseId(),
+                    'poll_id' => $answer->getPollId(),
+                ],
+                false
+            );
+
+            $this->save($answerRecord);
+
+            foreach ($answer->getAnswers() as $questionAnswer) {
+                $questionAnswerRecord = new QuestionAnswerRecord();
+                $questionAnswerRecord->setAttributes(
+                    [
+                        'question_id' => $questionAnswer->getQuestionId(),
+                        'answer_id' => $questionAnswer->getAnswerId(),
+                        'client_answer_id' => $answerRecord->id,
+                    ],
+                    false
+                );
+
+                $this->save($questionAnswerRecord);
+            }
+        } catch (Throwable $exception) {
+            $transaction->rollBack();
+
+            throw $exception;
+        }
+
+        $transaction->commit();
     }
 
     public function addRejection(int $pollId, int $getId, $getLicenseId): void
