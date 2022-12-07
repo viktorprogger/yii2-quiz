@@ -6,7 +6,8 @@
     "yiisoft/yii2": "^2.0.47"
   },
   "require-dev": {
-    "roave/security-advisories": "dev-latest"
+    "roave/security-advisories": "dev-latest",
+    "phpunit/phpunit": "^9.5"
   },
   "repositories": [
     {
@@ -22,6 +23,11 @@
   "autoload": {
     "psr-4": {
       "app\\modules\\poll\\": "src"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "app\\modules\\poll\\tests\\": "tests"
     }
   }
 }
