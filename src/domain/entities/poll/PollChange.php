@@ -28,7 +28,7 @@ final class PollChange
         array $userIds,
         QuestionChangeInterface ...$questions
     ) {
-        $this->validate($title, $publishedFrom, $publishedTo);
+        $this->validate($title, $publishedFrom, $publishedTo, $questions);
 
         $this->title = $title;
         $this->publishedFrom = $publishedFrom;
@@ -40,15 +40,21 @@ final class PollChange
     private function validate(
         string $title,
         DateTimeImmutable $publishedFrom,
-        DateTimeImmutable $publishedTo
+        DateTimeImmutable $publishedTo,
+        array $questions
     ): void {
         if (mb_strlen($title) < 5) {
             throw new DomainDataCorruptionException(
                 "Poll title must be a string of 5 characters or more, given '$title'"
             );
         }
+
         if ($publishedFrom->diff($publishedTo)->invert !== 1) {
             throw new DomainDataCorruptionException("Publish end date must be greater than publish start date");
+        }
+
+        if (count($questions) === 0) {
+            throw new DomainDataCorruptionException("Poll must have at least one question");
         }
     }
 

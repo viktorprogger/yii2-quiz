@@ -70,14 +70,17 @@ final class PollController extends Controller
      *   }
      * ]
      * ```
+     * @param Response $response Current response object, injected via DI container
      *
-     * @return Poll
+     * @return Response
      *
      * @throws BadRequestHttpException
      */
-    public function actionCreate(array $poll): Poll
+    public function actionCreate(array $poll, Response $response): Response
     {
-        return $this->pollRepository->create($this->createPollFromArray($poll));
+        $this->pollRepository->create($this->createPollFromArray($poll));
+
+        return $response->setStatusCode(201);
     }
 
     /**
@@ -104,14 +107,17 @@ final class PollController extends Controller
      *   }
      * ]
      * ```
+     * @param Response $response Current response object, injected via DI container
      *
-     * @return Poll
+     * @return Response
      *
      * @throws BadRequestHttpException
      */
-    public function actionUpdate(int $id, array $poll): Poll
+    public function actionUpdate(int $id, array $poll, Response $response): Response
     {
-        return $this->pollRepository->update($id, $this->createPollFromArray($poll));
+        $this->pollRepository->update($id, $this->createPollFromArray($poll));
+
+        return $response->setStatusCode(201);
     }
 
     /**
