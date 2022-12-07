@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace app\modules\poll\infrastruture\entities;
 
-use yii\db\ActiveQuery;
 use yii\db\ActiveQueryInterface;
 use yii\db\ActiveRecord;
 
@@ -27,7 +26,7 @@ final class ClientAnswerRecord extends ActiveRecord
     public function rules(): array
     {
         return [
-            ['user_id', 'unique', 'targetAttribute' => ['user_id', 'license_id']],
+            ['user_id', 'unique', 'targetAttribute' => ['user_id', 'license_id', 'poll_idw']],
             ['rejection', 'default', false],
             ['poll_id', 'exist', 'targetRelation' => 'poll'],
         ];
@@ -35,6 +34,6 @@ final class ClientAnswerRecord extends ActiveRecord
 
     public function getPoll(): ActiveQueryInterface
     {
-
+        return $this->hasOne(PollRecord::class, ['id' => 'poll_id']);
     }
 }

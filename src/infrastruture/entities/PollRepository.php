@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace app\modules\poll\infrastruture\entities;
 
-use app\modules\poll\domain\entities\clientAnswer\ClientAnswer;
 use app\modules\poll\domain\entities\clientAnswer\ClientAnswerChange;
 use app\modules\poll\domain\entities\exceptions\DomainDataCorruptionException;
 use app\modules\poll\domain\entities\exceptions\EntityNotFoundException;
@@ -35,7 +34,7 @@ final class PollRepository implements PollRepositoryInterface
      * @throws Throwable
      * @throws Exception
      */
-    public function create(PollChange $poll): Poll
+    public function create(PollChange $poll): void
     {
         /** @var Transaction $transaction */
         $transaction = $this->connection->beginTransaction();
@@ -86,7 +85,7 @@ final class PollRepository implements PollRepositoryInterface
         $transaction->commit();
     }
 
-    public function update(int $id, PollChange $poll): Poll
+    public function update(int $id, PollChange $poll): void
     {
         $record = PollRecord::find()->with('questions', 'questions.answers')->andWhere(['poll.deleted' => false])->one(
         );
@@ -165,9 +164,20 @@ final class PollRepository implements PollRepositoryInterface
         $transaction->commit();
     }
 
-    public function addRejection(int $pollId, int $getId, $getLicenseId): void
+    public function addRejection(int $pollId, int $userId, $licenseId): void
     {
-        // TODO: Implement addRejection() method.
+        $answerRecord = new ClientAnswerRecord();
+        $answerRecord->setAttributes(
+            [
+                'user_id' => $userId,
+                'license_id' => $licenseId,
+                'poll_id' => $pollId,
+                'rejection' => true,
+            ],
+            false
+        );
+
+        $this->save($answerRecord);
     }
 
     private function save(ActiveRecord $record): void
