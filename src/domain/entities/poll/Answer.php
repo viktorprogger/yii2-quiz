@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace app\modules\poll\domain\entities\poll;
 
-use app\modules\poll\domain\entities\exceptions\DomainDataCorruptionException;
+use app\modules\poll\domain\exceptions\DomainDataCorruptionException;
 use JsonSerializable;
 
 final class Answer implements JsonSerializable
@@ -29,7 +29,7 @@ final class Answer implements JsonSerializable
         if ($id < 1) {
             throw new DomainDataCorruptionException("Entity ID must be a positive integer, given '$id'");
         }
-        if (mb_strlen($text) < 5) {
+        if ($text === '') {
             throw new DomainDataCorruptionException("Answer text must be a non-empty string");
         }
     }

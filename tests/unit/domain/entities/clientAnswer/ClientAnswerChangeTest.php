@@ -4,19 +4,18 @@ declare(strict_types=1);
 
 namespace app\modules\poll\tests\unit\domain\entities\clientAnswer;
 
-use app\modules\poll\domain\entities\clientAnswer\ClientAnswer;
+use app\modules\poll\domain\entities\clientAnswer\ClientAnswerChange;
 use app\modules\poll\domain\entities\clientAnswer\QuestionAnswer;
 use app\modules\poll\domain\exceptions\DomainDataCorruptionException;
 use PHPUnit\Framework\TestCase;
 
-class ClientAnswerTest extends TestCase
+class ClientAnswerChangeTest extends TestCase
 {
     public function dataProvider(): array
     {
         return [
             'all is ok' => [
                 [
-                    1,
                     1,
                     1,
                     1,
@@ -29,21 +28,10 @@ class ClientAnswerTest extends TestCase
                     1,
                     1,
                     1,
-                    1,
                 ],
-            ],
-            'invalid id' => [
-                [
-                    0,
-                    1,
-                    1,
-                    1,
-                ],
-                "Entity ID must be a positive integer, given '0'",
             ],
             'invalid pollId' => [
                 [
-                    1,
                     0,
                     1,
                     1,
@@ -52,7 +40,6 @@ class ClientAnswerTest extends TestCase
             ],
             'invalid userId' => [
                 [
-                    1,
                     1,
                     0,
                     1,
@@ -63,14 +50,12 @@ class ClientAnswerTest extends TestCase
                 [
                     1,
                     1,
-                    1,
                     0,
                 ],
                 "License ID must be a positive integer, given '0'"
             ],
             'invalid two fields, the first is thrown' => [
                 [
-                    1,
                     1,
                     0,
                     0,
@@ -90,13 +75,12 @@ class ClientAnswerTest extends TestCase
             $this->expectExceptionMessage($exceptionText);
         }
 
-        $entity = new ClientAnswer(...$arguments);
+        $entity = new ClientAnswerChange(...$arguments);
 
-        self::assertEquals($arguments[0], $entity->getId());
-        self::assertEquals($arguments[1], $entity->getPollId());
-        self::assertEquals($arguments[2], $entity->getUserId());
-        self::assertEquals($arguments[3], $entity->getLicenseId());
-        self::assertEquals(array_slice($arguments, 4), $entity->getAnswers());
+        self::assertEquals($arguments[0], $entity->getPollId());
+        self::assertEquals($arguments[1], $entity->getUserId());
+        self::assertEquals($arguments[2], $entity->getLicenseId());
+        self::assertEquals(array_slice($arguments, 3), $entity->getAnswers());
     }
 
     private function mockAnswer(): QuestionAnswer

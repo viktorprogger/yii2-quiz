@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace app\modules\poll\domain\entities\poll;
 
-use app\modules\poll\domain\entities\exceptions\DomainDataCorruptionException;
+use app\modules\poll\domain\exceptions\DomainDataCorruptionException;
 use DateTimeImmutable;
 
 final class PollChange
@@ -49,7 +49,7 @@ final class PollChange
             );
         }
 
-        if ($publishedFrom->diff($publishedTo)->invert !== 1) {
+        if ($publishedTo->diff($publishedFrom)->invert !== 1) {
             throw new DomainDataCorruptionException("Publish end date must be greater than publish start date");
         }
 

@@ -84,7 +84,7 @@ final class PollController extends Controller
     }
 
     /**
-     * Quiz update endpoint
+     * Poll update endpoint
      *
      * @param int $id Id of the poll to update
      * @param array $poll The following JSON structure:
@@ -173,24 +173,24 @@ final class PollController extends Controller
     private function createPollFromArray(array $poll): PollChange
     {
         if (!isset($poll['title']) || !is_string($poll['title'])) {
-            throw new BadRequestHttpException('Quiz title must be a string');
+            throw new BadRequestHttpException('Poll title must be a string');
         }
 
         if (!isset($poll['publishedFrom']) || !is_int($poll['publishedFrom'])) {
-            throw new BadRequestHttpException('Quiz publish start datetime must be a valid timestamp');
+            throw new BadRequestHttpException('Poll publish start datetime must be a valid timestamp');
         }
 
         if (!isset($poll['publishedTo']) || !is_int($poll['publishedTo'])) {
-            throw new BadRequestHttpException('Quiz publish end datetime must be a valid timestamp');
+            throw new BadRequestHttpException('Poll publish end datetime must be a valid timestamp');
         }
 
         if (isset($poll['userIds']) && !is_array($poll['userIds'])) {
-            throw new BadRequestHttpException('Quiz userIds field must be an array of positive integers');
+            throw new BadRequestHttpException('Poll userIds field must be an array of positive integers');
         }
 
         foreach ($poll['userIds'] as $index => $userId) {
             if (!is_int($userId) || $userId < 1) {
-                throw new BadRequestHttpException("Quiz userIds field must be an array of positive integers, $userId given in key #$index");
+                throw new BadRequestHttpException("Poll userIds field must be an array of positive integers, $userId given in key #$index");
             }
         }
 
@@ -214,8 +214,8 @@ final class PollController extends Controller
 
     private function createQuestionFromArray(array $question): QuestionChangeInterface
     {
-        if (!isset($question['title']) || !is_string($question['title'])) {
-            throw new InvalidArgumentException('Quiz title must be a string');
+        if (!isset($question['text']) || !is_string($question['text'])) {
+            throw new InvalidArgumentException('Question text must be a string');
         }
 
         switch ($question['type']) {
@@ -228,7 +228,7 @@ final class PollController extends Controller
                     throw new InvalidArgumentException('dontCommentSince must be a positive integer');
                 }
 
-                return new QuestionChangeRated($question['title'], $question['maximum'], $question['dontCommentSince']);
+                return new QuestionChangeRated($question['text'], $question['maximum'], $question['dontCommentSince']);
             case 'custom':
                 $answers = [];
                 try {
@@ -239,7 +239,7 @@ final class PollController extends Controller
                     throw new InvalidArgumentException("Question #$index structure is invalid", 0, $exception);
                 }
 
-                return new QuestionChangeCustom($question['title'], ...$answers);
+                return new QuestionChangeCustom($question['text'], ...$answers);
             default:
                 throw new InvalidArgumentException('Question type must be either rated or custom');
         }

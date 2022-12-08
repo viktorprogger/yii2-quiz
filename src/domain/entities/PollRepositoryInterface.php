@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace app\modules\poll\domain\entities;
 
 use app\modules\poll\domain\entities\clientAnswer\ClientAnswerChange;
-use app\modules\poll\domain\entities\exceptions\DomainDataCorruptionException;
-use app\modules\poll\domain\entities\exceptions\EntityNotFoundException;
 use app\modules\poll\domain\entities\poll\Poll;
 use app\modules\poll\domain\entities\poll\PollChange;
+use app\modules\poll\domain\exceptions\DomainDataCorruptionException;
+use app\modules\poll\domain\exceptions\EntityNotFoundException;
 
 interface PollRepositoryInterface
 {

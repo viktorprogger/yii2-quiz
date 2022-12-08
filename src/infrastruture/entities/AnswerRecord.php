@@ -27,14 +27,14 @@ final class AnswerRecord extends ActiveRecord
 {
     public static function tableName(): string
     {
-        return 'poll_questions';
+        return 'poll_answers';
     }
 
     public function rules(): array
     {
         return [
             ['question_id', 'exist', 'targetRelation' => 'question'],
-            ['deleted', 'default', false],
+            ['deleted', 'default', 'value' => false],
         ];
     }
 

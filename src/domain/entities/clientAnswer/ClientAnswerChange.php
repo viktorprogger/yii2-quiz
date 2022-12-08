@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace app\modules\poll\domain\entities\clientAnswer;
 
-use app\modules\poll\domain\entities\exceptions\DomainDataCorruptionException;
+use app\modules\poll\domain\exceptions\DomainDataCorruptionException;
 
 final class ClientAnswerChange
 {

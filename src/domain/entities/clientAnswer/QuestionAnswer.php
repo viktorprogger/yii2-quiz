@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace app\modules\poll\domain\entities\clientAnswer;
 
-use app\modules\poll\domain\entities\exceptions\DomainDataCorruptionException;
+use app\modules\poll\domain\exceptions\DomainDataCorruptionException;
 
 final class QuestionAnswer
 {
@@ -19,7 +19,7 @@ final class QuestionAnswer
         $this->answerId = $answerId;
     }
 
-    public function validate(int $questionId, int $answerId): void
+    private function validate(int $questionId, int $answerId): void
     {
         if ($questionId < 1) {
             throw new DomainDataCorruptionException("Question ID must be a positive integer, given '$questionId'");

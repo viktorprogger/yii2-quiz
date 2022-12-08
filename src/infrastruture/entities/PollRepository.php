@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace app\modules\poll\infrastruture\entities;
 
 use app\modules\poll\domain\entities\clientAnswer\ClientAnswerChange;
-use app\modules\poll\domain\entities\exceptions\DomainDataCorruptionException;
-use app\modules\poll\domain\entities\exceptions\EntityNotFoundException;
-use app\modules\poll\domain\entities\exceptions\NotImplementedException;
 use app\modules\poll\domain\entities\poll\Answer;
 use app\modules\poll\domain\entities\poll\Poll;
 use app\modules\poll\domain\entities\poll\PollChange;
 use app\modules\poll\domain\entities\poll\Question;
 use app\modules\poll\domain\entities\PollRepositoryInterface;
+use app\modules\poll\domain\exceptions\DomainDataCorruptionException;
+use app\modules\poll\domain\exceptions\EntityNotFoundException;
+use app\modules\poll\domain\exceptions\NotImplementedException;
 use DateTimeImmutable;
 use Throwable;
 use yii\db\ActiveRecord;
@@ -70,6 +70,8 @@ final class PollRepository implements PollRepositoryInterface
                         [
                             'question_id' => $questionRecord->id,
                             'text' => $answer->getText(),
+                            'sort' => $answer->getSort(),
+                            'can_be_commented' => $answer->canBeCommented(),
                         ],
                         false
                     );

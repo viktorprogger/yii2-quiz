@@ -3,7 +3,8 @@
     "php": "^7.4|^8.0",
     "ext-json": "*",
     "ext-mbstring": "*",
-    "yiisoft/yii2": "^2.0.47"
+    "yiisoft/yii2": "^2.0.47",
+    "paulzi/yii2-json-behavior": "^1.0"
   },
   "require-dev": {
     "roave/security-advisories": "dev-latest",

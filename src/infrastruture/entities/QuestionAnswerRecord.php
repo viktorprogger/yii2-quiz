@@ -24,7 +24,7 @@ final class QuestionAnswerRecord extends ActiveRecord
 {
     public static function tableName(): string
     {
-        return 'poll_client_answer';
+        return 'poll_client_question_answers';
     }
 
     public function rules(): array

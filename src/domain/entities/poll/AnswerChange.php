@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace app\modules\poll\domain\entities\poll;
 
-use app\modules\poll\domain\entities\exceptions\DomainDataCorruptionException;
+use app\modules\poll\domain\exceptions\DomainDataCorruptionException;
 
 final class AnswerChange
 {
@@ -23,7 +23,7 @@ final class AnswerChange
 
     private function validate(string $text): void
     {
-        if (mb_strlen($text) < 5) {
+        if ($text === '') {
             throw new DomainDataCorruptionException("Answer text must be a non-empty string");
         }
     }

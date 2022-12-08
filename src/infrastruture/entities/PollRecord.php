@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace app\modules\poll\infrastruture\entities;
 
+use paulzi\jsonBehavior\JsonBehavior;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
-use yii\db\ActiveQuery;
 use yii\db\ActiveQueryInterface;
 use yii\db\ActiveRecord;
 
@@ -37,6 +37,11 @@ final class PollRecord extends ActiveRecord
         return [
             TimestampBehavior::class,
             BlameableBehavior::class,
+            [
+                'class' => JsonBehavior::class,
+                'attributes' => ['user_ids'],
+                'emptyValue' => '[]',
+            ],
         ];
     }
 

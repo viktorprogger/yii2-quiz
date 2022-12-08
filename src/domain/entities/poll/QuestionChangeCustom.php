@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace app\modules\poll\domain\entities\poll;
 
-use app\modules\poll\domain\entities\exceptions\DomainDataCorruptionException;
+use app\modules\poll\domain\exceptions\DomainDataCorruptionException;
 
 final class QuestionChangeCustom implements QuestionChangeInterface
 {
     private string $text;
     /**
-     * @var Answer[]
+     * @var AnswerChange[]
      */
     private array $answers;
 
-    public function __construct(string $text, Answer ...$answers)
+    public function __construct(string $text, AnswerChange ...$answers)
     {
         $this->validate($text, $answers);
 
@@ -24,8 +24,8 @@ final class QuestionChangeCustom implements QuestionChangeInterface
 
     private function validate(string $text, array $answers): void
     {
-        if (mb_strlen($text) < 5) {
-            throw new DomainDataCorruptionException("Question text must be a string of 5 characters or more, given '$text'");
+        if ($text === '') {
+            throw new DomainDataCorruptionException("Question text must be a non-empty string");
         }
 
         if (count($answers) < 2) {
