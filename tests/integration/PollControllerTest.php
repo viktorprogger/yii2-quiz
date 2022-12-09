@@ -6,12 +6,12 @@ namespace app\modules\poll\tests\integration;
 
 use app\modules\poll\domain\entities\poll\Poll;
 use app\modules\poll\infrastruture\controllers\PollController;
+use app\modules\poll\tests\integration\support\MigrateController;
 use EnricoStahn\JsonAssert\Assert;
 use JsonSerializable;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 use yii\console\Application;
-use yii\console\controllers\MigrateController;
 use yii\db\Connection;
 use yii\web\HttpException;
 use yii\web\Response;
@@ -701,8 +701,8 @@ final class PollControllerTest extends TestCase
             self::assertInstanceOf(Poll::class, $poll);
             self::assertInstanceOf(JsonSerializable::class, $poll);
 
-            $poll = json_decode(json_encode($poll, JSON_THROW_ON_ERROR));
-            self::assertJsonMatchesSchema($poll, __DIR__ . '/pollSchema.json');
+            $poll = json_decode(json_encode($poll, JSON_THROW_ON_ERROR), false);
+            self::assertJsonMatchesSchema($poll, __DIR__ . '/support/pollSchema.json');
             self::assertJsonValueEquals($pollExpected, 'title', $poll);
         }
     }
