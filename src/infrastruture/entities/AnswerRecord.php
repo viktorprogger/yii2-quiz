@@ -12,10 +12,10 @@ use yii\db\ActiveRecord;
 /**
  * @property int $id
  * @property int $sort
- * @property bool $can_be_commented
+ * @property bool|int $can_be_commented
  * @property int $question_id
- * @property string $text
- * @property bool $deleted
+ * @property string|int $text
+ * @property bool|int $deleted
  * @property int $created_at
  * @property int $updated_at
  * @property int $created_by

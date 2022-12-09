@@ -54,6 +54,8 @@ final class QuestionRecord extends ActiveRecord
 
     public function getAnswers(): ActiveQueryInterface
     {
-        return $this->hasMany(AnswerRecord::class, ['question_id' => 'id'])->where(['answers.deleted' => false]);
+        return $this
+            ->hasMany(AnswerRecord::class, ['question_id' => 'id'])
+            ->where([AnswerRecord::tableName() . '.deleted' => false]);
     }
 }

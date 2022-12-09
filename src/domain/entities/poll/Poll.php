@@ -55,7 +55,7 @@ final class Poll implements JsonSerializable
                 "Poll title must be a string of 5 characters or more, given '$title'"
             );
         }
-        if ($publishedFrom->diff($publishedTo)->invert !== 1) {
+        if ($publishedTo->diff($publishedFrom)->invert !== 1) {
             throw new DomainDataCorruptionException("Publish end date must be greater than publish start date");
         }
     }

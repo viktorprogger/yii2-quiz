@@ -23,6 +23,7 @@ class m221208_192524_init extends Migration
                 'updated_by' => $this->integer()->notNull(),
             ]
         );
+        $this->createIndex('idx_published_from__published_to', 'polls', ['published_from', 'published_to']);
 
         $this->createTable(
             'poll_questions',

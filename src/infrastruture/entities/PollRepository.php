@@ -44,8 +44,8 @@ final class PollRepository implements PollRepositoryInterface
             $pollRecord->setAttributes(
                 [
                     'title' => $poll->getTitle(),
-                    'published_from' => $poll->getPublishedFrom(),
-                    'published_to' => $poll->getPublishedTo(),
+                    'published_from' => $poll->getPublishedFrom()->getTimestamp(),
+                    'published_to' => $poll->getPublishedTo()->getTimestamp(),
                     'user_ids' => $poll->getUserIds(),
                 ],
                 false
@@ -101,18 +101,23 @@ final class PollRepository implements PollRepositoryInterface
 
     public function getActiveForUser(int $userId): ?Poll
     {
+        $now = time();
         $query = PollRecord::find()
+            ->alias('poll')
             ->with('questions', 'questions.answers')
-            ->leftJoin(ClientAnswerRecord::tableName() . ' ua', 'ua.poll_id = poll.id')
-            ->andWhere(['ua.id' => null])
-            ->andWhere(['deleted' => false])
-            ->orderBy(['published_at' => SORT_ASC]);
+            ->leftJoin(ClientAnswerRecord::tableName() . ' ca', 'ca.poll_id = poll.id')
+            ->andWhere(['<=', 'published_from', $now])
+            ->andWhere(['>', 'published_to', $now])
+            ->andWhere(['ca.id' => null])
+            ->orderBy(['published_from' => SORT_ASC]);
 
-        $record = $query
-            ->andWhere(new Expression("JSON_CONTAINS('user_ids', '$userId')"))
-            ->one();
+        $record = (clone $query)
+            ->andWhere(new Expression("JSON_CONTAINS(user_ids, '$userId')"));
+        $record = $record->one();
         if ($record === null) {
-            $record = $query->one();
+            $record = $query
+                ->andWhere(['user_ids' => '[]'])
+                ->one();
         }
 
         /** @var PollRecord|null $record */
@@ -194,11 +199,11 @@ final class PollRepository implements PollRepositoryInterface
     private function populate(PollRecord $record): Poll
     {
         return new Poll(
-           $record->id,
-           $record->title,
-           (new DateTimeImmutable())->setTimestamp($record->published_from),
-           (new DateTimeImmutable())->setTimestamp($record->published_to),
-           $record->user_ids,
+            $record->id,
+            $record->title,
+            (new DateTimeImmutable())->setTimestamp($record->published_from),
+            (new DateTimeImmutable())->setTimestamp($record->published_to),
+            (array) $record->user_ids,
             ...$this->populateQuestions(...$record->questions)
         );
     }
@@ -230,8 +235,8 @@ final class PollRepository implements PollRepositoryInterface
             $result[] = new Answer(
                 $record->id,
                 $record->sort,
-                $record->text,
-                $record->can_be_commented,
+                (string) $record->text,
+                (bool) $record->can_be_commented,
             );
         }
 

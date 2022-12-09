@@ -13,6 +13,7 @@ use app\modules\poll\domain\entities\poll\QuestionChangeCustom;
 use app\modules\poll\domain\entities\poll\QuestionChangeInterface;
 use app\modules\poll\domain\entities\poll\QuestionChangeRated;
 use app\modules\poll\domain\entities\PollRepositoryInterface;
+use app\modules\poll\domain\exceptions\DomainDataCorruptionException;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use Yii;
@@ -42,7 +43,7 @@ final class PollController extends Controller
         return $behaviors;
     }
 
-    public function actionGetQuiz(): Poll
+    public function actionGet(): ?Poll
     {
         return $this->pollRepository->getActiveForUser(Yii::$app->user->id);
     }
@@ -78,7 +79,11 @@ final class PollController extends Controller
      */
     public function actionCreate(array $poll, Response $response): Response
     {
-        $this->pollRepository->create($this->createPollFromArray($poll));
+        try {
+            $this->pollRepository->create($this->createPollFromArray($poll));
+        } catch (DomainDataCorruptionException $exception) {
+            throw new BadRequestHttpException($exception->getMessage(), 0, $exception);
+        }
 
         return $response->setStatusCode(201);
     }
@@ -115,7 +120,11 @@ final class PollController extends Controller
      */
     public function actionUpdate(int $id, array $poll, Response $response): Response
     {
-        $this->pollRepository->update($id, $this->createPollFromArray($poll));
+        try {
+            $this->pollRepository->update($id, $this->createPollFromArray($poll));
+        } catch (DomainDataCorruptionException $exception) {
+            throw new BadRequestHttpException($exception->getMessage(), 0, $exception);
+        }
 
         return $response->setStatusCode(201);
     }
@@ -133,25 +142,29 @@ final class PollController extends Controller
      */
     public function actionAnswer(int $pollId, array $answers, User $user, Response $response): Response
     {
-        $answerCollection = [];
-        foreach ($answers as $index => $definition) {
-            if (!isset($definition['questionId']) || !is_int($definition['questionId'])) {
-                throw new BadRequestHttpException("QuestionId must be an integer, error in answer #$index");
-            }
-            if (!isset($definition['answerId']) || !is_int($definition['answerId'])) {
-                throw new BadRequestHttpException("AnswerId must be an integer, error in answer #$index");
+        try {
+            $answerCollection = [];
+            foreach ($answers as $index => $definition) {
+                if (!isset($definition['questionId']) || !is_int($definition['questionId'])) {
+                    throw new BadRequestHttpException("QuestionId must be an integer, error in answer #$index");
+                }
+                if (!isset($definition['answerId']) || !is_int($definition['answerId'])) {
+                    throw new BadRequestHttpException("AnswerId must be an integer, error in answer #$index");
+                }
+
+                $answerCollection[] = new QuestionAnswer($definition['questionId'], $definition['answerId']);
             }
 
-            $answerCollection[] = new QuestionAnswer($definition['questionId'], $definition['answerId']);
+            $clientAnswer = new ClientAnswerChange(
+                   $pollId,
+                   $user->getId(),
+                   $user->getLiscenseId(), // FIXME add real licenseId
+                ...$answerCollection
+            );
+            $this->pollRepository->addAnswer($clientAnswer);
+        } catch (DomainDataCorruptionException $exception) {
+            throw new BadRequestHttpException($exception->getMessage(), 0, $exception);
         }
-
-        $clientAnswer = new ClientAnswerChange(
-            $pollId,
-            $user->getId(),
-            $user->getLiscenseId(), // FIXME
-            ...$answerCollection
-        );
-        $this->pollRepository->addAnswer($clientAnswer);
 
         return $response->setStatusCode(201);
     }
@@ -165,7 +178,11 @@ final class PollController extends Controller
      */
     public function actionReject(int $pollId, User $user, Response $response): Response
     {
-        $this->pollRepository->addRejection($pollId, $user->getId(), $user->getLicenseId()); // FIXME
+        try {
+            $this->pollRepository->addRejection($pollId, $user->getId(), $user->getLicenseId()); // FIXME add real licenseId
+        } catch (DomainDataCorruptionException $exception) {
+            throw new BadRequestHttpException($exception->getMessage(), 0, $exception);
+        }
 
         return $response->setStatusCode(201);
     }
@@ -188,6 +205,7 @@ final class PollController extends Controller
             throw new BadRequestHttpException('Poll userIds field must be an array of positive integers');
         }
 
+        $poll['userIds'] = $poll['userIds'] ?? [];
         foreach ($poll['userIds'] as $index => $userId) {
             if (!is_int($userId) || $userId < 1) {
                 throw new BadRequestHttpException("Poll userIds field must be an array of positive integers, $userId given in key #$index");

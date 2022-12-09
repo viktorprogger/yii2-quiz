@@ -21,7 +21,7 @@ final class QuestionChangeRated implements QuestionChangeInterface
      */
     public function __construct(string $text, int $maximum, int $dontCommentSince)
     {
-        $this->validate($text, $maximum);
+        $this->validate($text, $maximum, $dontCommentSince);
 
         $answers = [];
         for ($i = 1; $i <= $maximum; $i++) {
@@ -32,15 +32,20 @@ final class QuestionChangeRated implements QuestionChangeInterface
         $this->answers = $answers;
     }
 
-    private function validate(string $text, int $maximum): void
+    private function validate(string $text, int $maximum, int $dontCommentSince): void
     {
         if (mb_strlen($text) < 5) {
             throw new DomainDataCorruptionException(
                 "Question text must be a string of 5 characters or more, given '$text'"
             );
         }
-        if ($maximum < 1) {
+
+        if ($maximum < 2) {
             throw new DomainDataCorruptionException("Maximum rating must be a positive integer, given $maximum");
+        }
+
+        if ($dontCommentSince < 1 || $dontCommentSince > $maximum) {
+            throw new DomainDataCorruptionException("dontCommentSince must be an integer between 1 and maximum rate ($maximum). Got $dontCommentSince.");
         }
     }
 

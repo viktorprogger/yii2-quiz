@@ -1,0 +1,34 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {"type":  "integer"},
+    "title": {"type":  "string"},
+    "publishedFrom": {"type":  "integer"},
+    "publishedTo": {"type":  "integer"},
+    "questions": {
+      "type":  "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {"type":  "integer"},
+          "text": {"type":  "string"},
+          "answers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {"type":  "integer"},
+                "sort": {"type":  "integer"},
+                "text": {"type":  "string"},
+                "canBeCommented": {"type": "boolean"}
+              },
+              "required": ["id", "sort", "text", "canBeCommented"]
+            }
+          }
+        },
+        "required": ["id", "text", "answers"]
+      }
+    }
+  },
+  "required": ["id", "title", "publishedFrom", "publishedTo", "questions"]
+}
