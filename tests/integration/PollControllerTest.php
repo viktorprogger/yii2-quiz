@@ -7,10 +7,10 @@ namespace app\modules\poll\tests\integration;
 use app\modules\poll\domain\entities\poll\Poll;
 use app\modules\poll\infrastruture\controllers\PollController;
 use app\modules\poll\tests\integration\support\MigrateController;
+use app\modules\poll\tests\integration\support\User;
 use EnricoStahn\JsonAssert\Assert;
 use JsonSerializable;
 use PHPUnit\Framework\TestCase;
-use stdClass;
 use yii\console\Application;
 use yii\db\Connection;
 use yii\web\HttpException;
@@ -26,8 +26,6 @@ final class PollControllerTest extends TestCase
     {
         define('YII_ENV', 'test');
         require_once dirname(__DIR__, 2) . '/vendor/yiisoft/yii2/Yii.php';
-        $user = new stdClass();
-        $user->id = 1;
 
         self::$application = new Application(
             [
@@ -36,14 +34,22 @@ final class PollControllerTest extends TestCase
                 'controllerNamespace' => 'app\modules\poll\infrastruture\controllers',
                 'components' => [
                     'db' => Connection::class,
-                    'user' => $user,
                 ],
             ] + require dirname(__DIR__, 2) . '/config/main.php'
         );
 
-        self::dbClear();
-
         parent::setUpBeforeClass();
+    }
+
+    protected function setUp(): void
+    {
+        $user = $this->createMock(User::class);
+        $user->method('getId')->willReturn(1);
+        $user->method('__get')->with('id')->willReturn(1);
+        $user->method('getLicenseId')->willReturn(2);
+        self::$application->set('user', $user);
+
+        self::dbClear();
     }
 
     public function creationDataProvider(): array
@@ -479,14 +485,7 @@ final class PollControllerTest extends TestCase
 
         $controller = self::$application->createControllerByID('poll');
         self::assertInstanceOf(PollController::class, $controller);
-
-        $response = $this->createMock(Response::class);
-        if ($expectException) {
-            $response->method('setStatusCode')->willReturn($response);
-        } else {
-            $response->expects(self::once())->method('setStatusCode')->willReturn($response);
-        }
-        $controller->actionCreate($data, $response);
+        self::assertInstanceOf(Poll::class, $controller->actionCreate($data));
     }
 
     public function gettingDataProvider(): array
@@ -675,6 +674,36 @@ final class PollControllerTest extends TestCase
                     ],
                 ],
             ],
+            'one common archived and one addressed archived polls, none is returned' => [
+                null,
+                [
+                    'title' => 'test poll common',
+                    'publishedFrom' => strtotime('-2 weeks'),
+                    'publishedTo' => strtotime('yesterday'),
+                    'questions' => [
+                        [
+                            'type' => 'rated',
+                            'text' => 'How do you like this test?',
+                            'maximum' => 10,
+                            'dontCommentSince' => 5,
+                        ],
+                    ],
+                ],
+                [
+                    'title' => 'test poll addressed',
+                    'publishedFrom' => strtotime('-1 weeks'),
+                    'publishedTo' => strtotime('yesterday'),
+                    'userIds' => [1, 2, 3],
+                    'questions' => [
+                        [
+                            'type' => 'rated',
+                            'text' => 'How do you like this test?',
+                            'maximum' => 10,
+                            'dontCommentSince' => 5,
+                        ],
+                    ],
+                ],
+            ],
         ];
     }
 
@@ -683,8 +712,6 @@ final class PollControllerTest extends TestCase
      */
     public function testPollGetting(?string $pollExpected, array ...$pollsToCreate): void
     {
-        self::dbClear();
-
         /** @var PollController $controller */
         $controller = self::$application->createControllerByID('poll');
         $response = $this->createMock(Response::class);
@@ -705,6 +732,198 @@ final class PollControllerTest extends TestCase
             self::assertJsonMatchesSchema($poll, __DIR__ . '/support/pollSchema.json');
             self::assertJsonValueEquals($pollExpected, 'title', $poll);
         }
+    }
+
+    public function answeringDataProvider(): array
+    {
+        return [
+            'all is ok' => [
+                [
+                    'What do you like?' => ['answer' => 'Cat'],
+                    'How much do you like it?' => ['answer' => '5'],
+                ],
+            ],
+            'all is ok with comments' => [
+                [
+                    'What do you like?' => ['answer' => 'Cat', 'comment' => 'Cats are fluffies'],
+                    'How much do you like it?' => ['answer' => '4', 'comment' => 'I don\'t like animals at all'],
+                ],
+            ],
+            'error, unexpected comment' => [
+                [
+                    'What do you like?' => ['answer' => 'Cat', 'comment' => 'Cats are fluffies'],
+                    'How much do you like it?' => ['answer' => '5', 'comment' => 'I don\'t like animals at all'],
+                ],
+                '/Answer #\d+ can\'t be commented/',
+            ],
+            'error, unknown answer' => [
+                [
+                    'What do you like?' => ['answer' => 'Parrots'],
+                    'How much do you like it?' => ['answer' => '5'],
+                ],
+                "/Answer #\d+ doesn't belong to question #\d+/",
+            ],
+            'error, unknown question' => [
+                [
+                    'What do you prefer?' => ['answer' => 'Cat'],
+                    'How much do you like it?' => ['answer' => '5'],
+                ],
+                "/Question #\d+ doesn't belong to poll #\d+/",
+            ],
+            'error, too little answers' => [
+                [
+                    'What do you like?' => ['answer' => 'Cat'],
+                ],
+                "/Not all questions are answered/",
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider answeringDataProvider
+     */
+    public function testAnswering($answers, ?string $exceptionMessage = null): void
+    {
+        if ($exceptionMessage !== null) {
+            $this->expectExceptionMessageMatches($exceptionMessage);
+        }
+
+        $pollData = [
+            'title' => 'test poll',
+            'publishedFrom' => 1670525731,
+            'publishedTo' => 1670526000,
+            'questions' => [
+                [
+                    'type' => 'custom',
+                    'text' => 'What do you like?',
+                    'answers' => [
+                        [
+                            'text' => 'Cat',
+                            'sort' => 100,
+                            'canBeCommented' => true,
+                        ],
+                        [
+                            'text' => 'Dog',
+                            'sort' => 100,
+                            'canBeCommented' => false,
+                        ],
+                    ],
+                ],
+                [
+                    'type' => 'rated',
+                    'text' => 'How much do you like it?',
+                    'maximum' => 10,
+                    'dontCommentSince' => 5,
+                ],
+            ],
+        ];
+        /** @var PollController $controller */
+        $controller = self::$application->createControllerByID('poll');
+        $poll = $controller->actionCreate($pollData);
+
+        $data = [];
+        foreach ($answers as $questionText => $answerDefinition) {
+            $questionId = $answerId = null;
+            foreach ($poll->getQuestions() as $question) {
+                if ($question->getText() === $questionText) {
+                    $questionId = $question->getId();
+                    foreach ($question->getAnswers() as $answer) {
+                        if ($answer->getText() === $answerDefinition['answer']) {
+                            $answerId = $answer->getId();
+                        }
+                    }
+                }
+            }
+
+            $data[] = [
+                'questionId' => $questionId ?? random_int(99999, 9999999),
+                'answerId' => $answerId ?? random_int(99999, 9999999),
+                'comment' => $answerDefinition['comment'] ?? '',
+            ];
+        }
+
+        $response = $this->createMock(Response::class);
+        if ($exceptionMessage === null) {
+            $response
+                ->expects(self::once())
+                ->method('setStatusCode')
+                ->with(201)
+                ->willReturn($response);
+        }
+        $controller->actionAnswer($poll->getId(), $data, self::$application->get('user'), $response);
+    }
+
+    public function testCantGetAnswered(): void
+    {
+        $pollCommonDefinition = [
+            'title' => 'test poll',
+            'publishedFrom' => strtotime('-2 weeks'),
+            'publishedTo' => strtotime('+2 weeks'),
+            'questions' => [
+                [
+                    'type' => 'rated',
+                    'text' => 'How do you like this test?',
+                    'maximum' => 10,
+                    'dontCommentSince' => 5,
+                ],
+            ],
+        ];
+        $pollPersonalDefinition = [
+            'title' => 'test poll',
+            'userIds' => [1],
+            'publishedFrom' => strtotime('-2 weeks'),
+            'publishedTo' => strtotime('+2 weeks'),
+            'questions' => [
+                [
+                    'type' => 'rated',
+                    'text' => 'How do you like this test?',
+                    'maximum' => 10,
+                    'dontCommentSince' => 5,
+                ],
+            ],
+        ];
+        /** @var PollController $controller */
+        $controller = self::$application->createControllerByID('poll');
+        $pollCommon = $controller->actionCreate($pollCommonDefinition);
+        $pollPersonal = $controller->actionCreate($pollPersonalDefinition);
+        $pollActual = $controller->actionGet();
+
+        self::assertContainsOnlyInstancesOf(Poll::class, [$pollCommon, $pollPersonal, $pollActual]);
+        self::assertEquals($pollPersonal->getId(), $pollActual->getId(), 'The first poll must be the personal one');
+
+        $response = $this->createMock(Response::class);
+        $response->method('setStatusCode')->willReturn($response);
+
+        $controller->actionAnswer(
+            $pollActual->getId(),
+            [
+                [
+                    'questionId' => $pollActual->getQuestions()[0]->getId(),
+                    'answerId' => $pollActual->getQuestions()[0]->getAnswers()[0]->getId(),
+                ],
+            ],
+            self::$application->get('user'),
+            $response
+        );
+
+        $pollActual = $controller->actionGet();
+        self::assertInstanceOf(Poll::class, $pollActual);
+        self::assertEquals($pollCommon->getId(), $pollActual->getId(), 'When the personal poll is answered, only the common one is available');
+
+        $controller->actionAnswer(
+            $pollActual->getId(),
+            [
+                [
+                    'questionId' => $pollActual->getQuestions()[0]->getId(),
+                    'answerId' => $pollActual->getQuestions()[0]->getAnswers()[0]->getId(),
+                ],
+            ],
+            self::$application->get('user'),
+            $response
+        );
+
+        $pollActual = $controller->actionGet();
+        self::assertNull($pollActual, 'There are no unanswered poll for the current user');
     }
 
     private static function dbClear(): void

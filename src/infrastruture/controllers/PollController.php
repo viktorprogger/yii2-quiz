@@ -77,15 +77,13 @@ final class PollController extends Controller
      *
      * @throws BadRequestHttpException
      */
-    public function actionCreate(array $poll, Response $response): Response
+    public function actionCreate(array $poll): Poll
     {
         try {
-            $this->pollRepository->create($this->createPollFromArray($poll));
+            return $this->pollRepository->create($this->createPollFromArray($poll));
         } catch (DomainDataCorruptionException $exception) {
             throw new BadRequestHttpException($exception->getMessage(), 0, $exception);
         }
-
-        return $response->setStatusCode(201);
     }
 
     /**
@@ -118,21 +116,19 @@ final class PollController extends Controller
      *
      * @throws BadRequestHttpException
      */
-    public function actionUpdate(int $id, array $poll, Response $response): Response
+    public function actionUpdate(int $id, array $poll, Response $response): Poll
     {
         try {
-            $this->pollRepository->update($id, $this->createPollFromArray($poll));
+            return $this->pollRepository->update($id, $this->createPollFromArray($poll));
         } catch (DomainDataCorruptionException $exception) {
             throw new BadRequestHttpException($exception->getMessage(), 0, $exception);
         }
-
-        return $response->setStatusCode(201);
     }
 
     /**
      * @param int $pollId Id of an answered poll
-     * @param array $answers Array of answers in a such form: [questionId => int, answerId => int]. All the keys are
-     *     required
+     * @param array $answers Array of answers in a such form: {questionId => int, answerId => int, comment => string}.
+     *                       Question and answer ids are required
      * @param User $user Current user component, injected via DI container
      * @param Response $response Current response object, injected via DI container
      *
@@ -152,13 +148,13 @@ final class PollController extends Controller
                     throw new BadRequestHttpException("AnswerId must be an integer, error in answer #$index");
                 }
 
-                $answerCollection[] = new QuestionAnswer($definition['questionId'], $definition['answerId']);
+                $answerCollection[] = new QuestionAnswer($definition['questionId'], $definition['answerId'], $definition['comment'] ?? '');
             }
 
             $clientAnswer = new ClientAnswerChange(
-                   $pollId,
-                   $user->getId(),
-                   $user->getLiscenseId(), // FIXME add real licenseId
+               $pollId,
+               $user->getId(),
+               $user->getLicenseId(), // FIXME add real licenseId
                 ...$answerCollection
             );
             $this->pollRepository->addAnswer($clientAnswer);

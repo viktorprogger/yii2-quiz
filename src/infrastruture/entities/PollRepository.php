@@ -34,7 +34,7 @@ final class PollRepository implements PollRepositoryInterface
      * @throws Throwable
      * @throws Exception
      */
-    public function create(PollChange $poll): void
+    public function create(PollChange $poll): Poll
     {
         /** @var Transaction $transaction */
         $transaction = $this->connection->beginTransaction();
@@ -85,9 +85,11 @@ final class PollRepository implements PollRepositoryInterface
         }
 
         $transaction->commit();
+
+        return $this->populate($pollRecord);
     }
 
-    public function update(int $id, PollChange $poll): void
+    public function update(int $id, PollChange $poll): Poll
     {
         $record = PollRecord::find()->with('questions', 'questions.answers')->andWhere(['poll.deleted' => false])->one(
         );
@@ -133,12 +135,17 @@ final class PollRepository implements PollRepositoryInterface
      */
     public function addAnswer(ClientAnswerChange $answer): void
     {
+        $pollRecord = PollRecord::findOne($answer->getPollId());
+        if ($pollRecord === null || (count((array) $pollRecord->user_ids) > 0 && in_array($answer->getUserId(), (array) $pollRecord->user_ids, true))) {
+            throw new DomainDataCorruptionException('User is not allowed to answer to this poll');
+        }
+
         /** @var Transaction $transaction */
         $transaction = $this->connection->beginTransaction();
 
         try {
-            $answerRecord = new ClientAnswerRecord();
-            $answerRecord->setAttributes(
+            $clientAnswerRecord = new ClientAnswerRecord();
+            $clientAnswerRecord->setAttributes(
                 [
                     'user_id' => $answer->getUserId(),
                     'license_id' => $answer->getLicenseId(),
@@ -147,20 +154,48 @@ final class PollRepository implements PollRepositoryInterface
                 false
             );
 
-            $this->save($answerRecord);
+            $this->save($clientAnswerRecord);
 
+            $answered = [];
             foreach ($answer->getAnswers() as $questionAnswer) {
+                $questionRecord = QuestionRecord::findOne($questionAnswer->getQuestionId());
+                if ($questionRecord === null || $questionRecord->poll_id !== $answer->getPollId()) {
+                    throw new DomainDataCorruptionException("Question #{$questionAnswer->getQuestionId()} doesn't belong to poll #{$answer->getPollId()}");
+                }
+
+                $answerRecord = AnswerRecord::findOne($questionAnswer->getAnswerId());
+                if ($answerRecord === null || $answerRecord->question_id !== $questionAnswer->getQuestionId()) {
+                    throw new DomainDataCorruptionException("Answer #{$questionAnswer->getAnswerId()} doesn't belong to question #{$questionAnswer->getQuestionId()}");
+                }
+
+                if ($questionAnswer->getComment() !== '' && (bool) $answerRecord->can_be_commented === false) {
+                    throw new DomainDataCorruptionException("Answer #{$questionAnswer->getAnswerId()} can't be commented");
+                }
+
                 $questionAnswerRecord = new QuestionAnswerRecord();
                 $questionAnswerRecord->setAttributes(
                     [
                         'question_id' => $questionAnswer->getQuestionId(),
                         'answer_id' => $questionAnswer->getAnswerId(),
-                        'client_answer_id' => $answerRecord->id,
+                        'client_answer_id' => $clientAnswerRecord->id,
+                        'comment' => $questionAnswer->getComment(),
                     ],
                     false
                 );
 
                 $this->save($questionAnswerRecord);
+                $answered[] = $questionAnswer->getQuestionId();
+            }
+
+            $questionList = $this->connection
+                ->createCommand(
+                    'SELECT id FROM ' . QuestionRecord::tableName() . ' WHERE poll_id = :poll',
+                    ['poll' => $answer->getPollId()]
+                )
+                ->queryColumn();
+
+            if (count(array_diff($questionList, $answered)) > 0) {
+                throw new DomainDataCorruptionException("Not all questions are answered");
             }
         } catch (Throwable $exception) {
             $transaction->rollBack();

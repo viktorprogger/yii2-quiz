@@ -101,6 +101,6 @@ class ClientAnswerTest extends TestCase
 
     private function mockAnswer(): QuestionAnswer
     {
-        return new QuestionAnswer(random_int(1, 1000), random_int(1, 1000));
+        return new QuestionAnswer(random_int(1, 1000), random_int(1, 1000), '');
     }
 }

@@ -12,6 +12,7 @@ use yii\db\ActiveRecord;
  * @property int $question_id
  * @property int $answer_id
  * @property int $client_answer_id
+ * @property string $comment
  *
  * @property QuestionRecord $question
  * @property AnswerRecord $answer
@@ -47,8 +48,8 @@ final class QuestionAnswerRecord extends ActiveRecord
         return $this->hasOne(AnswerRecord::class, ['id' => 'question_id']);
     }
 
-    public function getClientAnswerRecord(): ActiveQueryInterface
+    public function getClientAnswer(): ActiveQueryInterface
     {
-        return $this->hasOne(ClientAnswerRecord::class, ['id' => 'question_id']);
+        return $this->hasOne(ClientAnswerRecord::class, ['id' => 'client_answer_id']);
     }
 }

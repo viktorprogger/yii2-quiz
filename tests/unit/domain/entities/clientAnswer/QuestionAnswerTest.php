@@ -17,12 +17,14 @@ class QuestionAnswerTest extends TestCase
                 [
                     1,
                     1,
-                    ],
+                    ''
+                ],
             ],
             'invalid answerId' => [
                 [
                     0,
                     1,
+                    ''
                 ],
                 "Question ID must be a positive integer, given '0'",
             ],
@@ -30,6 +32,7 @@ class QuestionAnswerTest extends TestCase
                 [
                     1,
                     0,
+                    ''
                 ],
                 "Answer ID must be a positive integer, given '0'",
             ],
@@ -37,6 +40,7 @@ class QuestionAnswerTest extends TestCase
                 [
                     0,
                     0,
+                    ''
                 ],
                 "Question ID must be a positive integer, given '0'",
             ],

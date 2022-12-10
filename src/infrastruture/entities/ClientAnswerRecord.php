@@ -26,7 +26,7 @@ final class ClientAnswerRecord extends ActiveRecord
     public function rules(): array
     {
         return [
-            ['user_id', 'unique', 'targetAttribute' => ['user_id', 'license_id', 'poll_idw']],
+            ['user_id', 'unique', 'targetAttribute' => ['user_id', 'license_id', 'poll_id']],
             ['rejection', 'default', 'value' => false],
             ['poll_id', 'exist', 'targetRelation' => 'poll'],
         ];

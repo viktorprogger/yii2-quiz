@@ -15,12 +15,12 @@ interface PollRepositoryInterface
     /**
      * @throws DomainDataCorruptionException
      */
-    public function create(PollChange $poll): void;
+    public function create(PollChange $poll): Poll;
 
     /**
      * @throws EntityNotFoundException
      */
-    public function update(int $id, PollChange $poll): void;
+    public function update(int $id, PollChange $poll): Poll;
 
     /**
      * @throws DomainDataCorruptionException

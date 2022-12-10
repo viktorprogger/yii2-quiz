@@ -10,13 +10,15 @@ final class QuestionAnswer
 {
     private int $questionId;
     private int $answerId;
+    private string $comment;
 
-    public function __construct(int $questionId, int $answerId)
+    public function __construct(int $questionId, int $answerId, string $comment)
     {
         $this->validate($questionId, $answerId);
 
         $this->questionId = $questionId;
         $this->answerId = $answerId;
+        $this->comment = $comment;
     }
 
     private function validate(int $questionId, int $answerId): void
@@ -37,5 +39,10 @@ final class QuestionAnswer
     public function getAnswerId(): int
     {
         return $this->answerId;
+    }
+
+    public function getComment(): string
+    {
+        return $this->comment;
     }
 }
