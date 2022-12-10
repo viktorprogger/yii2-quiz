@@ -926,6 +926,101 @@ final class PollControllerTest extends TestCase
         self::assertNull($pollActual, 'There are no unanswered poll for the current user');
     }
 
+    public function testRejection(): void
+    {
+        $pollDefinition = [
+            'title' => 'test poll',
+            'publishedFrom' => strtotime('-2 weeks'),
+            'publishedTo' => strtotime('+2 weeks'),
+            'questions' => [
+                [
+                    'type' => 'rated',
+                    'text' => 'How do you like this test?',
+                    'maximum' => 10,
+                    'dontCommentSince' => 5,
+                ],
+            ],
+        ];
+        /** @var PollController $controller */
+        $controller = self::$application->createControllerByID('poll');
+        $poll = $controller->actionCreate($pollDefinition);
+        $response = $this->createMock(Response::class);
+        $response->expects(self::once())->method('setStatusCode')->willReturn($response);
+        $controller->actionReject($poll->getId(), self::$application->get('user'), $response);
+    }
+
+    public function testCantRejectRejected(): void
+    {
+        $this->expectExceptionMessage('This poll is answered already');
+
+        $pollDefinition = [
+            'title' => 'test poll',
+            'publishedFrom' => strtotime('-2 weeks'),
+            'publishedTo' => strtotime('+2 weeks'),
+            'questions' => [
+                [
+                    'type' => 'rated',
+                    'text' => 'How do you like this test?',
+                    'maximum' => 10,
+                    'dontCommentSince' => 5,
+                ],
+            ],
+        ];
+        /** @var PollController $controller */
+        $controller = self::$application->createControllerByID('poll');
+        $poll = $controller->actionCreate($pollDefinition);
+        $response = $this->createMock(Response::class);
+        $response->expects(self::once())->method('setStatusCode')->willReturn($response);
+        $controller->actionAnswer(
+            $poll->getId(),
+            [
+                [
+                    'questionId' => $poll->getQuestions()[0]->getId(),
+                    'answerId' => $poll->getQuestions()[0]->getAnswers()[0]->getId(),
+                ],
+            ],
+            self::$application->get('user'),
+            $response
+        );
+        $controller->actionAnswer(
+            $poll->getId(),
+            [
+                [
+                    'questionId' => $poll->getQuestions()[0]->getId(),
+                    'answerId' => $poll->getQuestions()[0]->getAnswers()[0]->getId(),
+                ],
+            ],
+            self::$application->get('user'),
+            $response
+        );
+    }
+
+    public function testCantAnswerAnswered(): void
+    {
+        $this->expectExceptionMessage('This poll is answered already');
+
+        $pollDefinition = [
+            'title' => 'test poll',
+            'publishedFrom' => strtotime('-2 weeks'),
+            'publishedTo' => strtotime('+2 weeks'),
+            'questions' => [
+                [
+                    'type' => 'rated',
+                    'text' => 'How do you like this test?',
+                    'maximum' => 10,
+                    'dontCommentSince' => 5,
+                ],
+            ],
+        ];
+        /** @var PollController $controller */
+        $controller = self::$application->createControllerByID('poll');
+        $poll = $controller->actionCreate($pollDefinition);
+        $response = $this->createMock(Response::class);
+        $response->expects(self::once())->method('setStatusCode')->willReturn($response);
+        $controller->actionReject($poll->getId(), self::$application->get('user'), $response);
+        $controller->actionReject($poll->getId(), self::$application->get('user'), $response);
+    }
+
     private static function dbClear(): void
     {
         ob_start();
