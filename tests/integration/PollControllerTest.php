@@ -949,7 +949,7 @@ final class PollControllerTest extends TestCase
         $controller->actionReject($poll->getId(), self::$application->get('user'), $response);
     }
 
-    public function testCantRejectRejected(): void
+    public function testCantAnswerAnswered(): void
     {
         $this->expectExceptionMessage('This poll is answered already');
 
@@ -995,7 +995,7 @@ final class PollControllerTest extends TestCase
         );
     }
 
-    public function testCantAnswerAnswered(): void
+    public function testCantRejectRejected(): void
     {
         $this->expectExceptionMessage('This poll is answered already');
 
@@ -1019,6 +1019,78 @@ final class PollControllerTest extends TestCase
         $response->expects(self::once())->method('setStatusCode')->willReturn($response);
         $controller->actionReject($poll->getId(), self::$application->get('user'), $response);
         $controller->actionReject($poll->getId(), self::$application->get('user'), $response);
+    }
+
+    public function testCantAnswerForeignPoll(): void
+    {
+        $this->expectExceptionMessage('User is not allowed to answer to this poll');
+
+        $pollDefinition = [
+            'title' => 'test poll',
+            'userIds' => [1],
+            'publishedFrom' => strtotime('-2 weeks'),
+            'publishedTo' => strtotime('+2 weeks'),
+            'questions' => [
+                [
+                    'type' => 'rated',
+                    'text' => 'How do you like this test?',
+                    'maximum' => 10,
+                    'dontCommentSince' => 5,
+                ],
+            ],
+        ];
+        /** @var PollController $controller */
+        $controller = self::$application->createControllerByID('poll');
+        $poll = $controller->actionCreate($pollDefinition);
+
+        $user = $this->createMock(User::class);
+        $user->method('getId')->willReturn(2);
+        $user->method('__get')->with('id')->willReturn(2);
+        $user->method('getLicenseId')->willReturn(2);
+
+        $response = $this->createMock(Response::class);
+        $controller->actionAnswer(
+            $poll->getId(),
+            [
+                [
+                    'questionId' => $poll->getQuestions()[0]->getId(),
+                    'answerId' => $poll->getQuestions()[0]->getAnswers()[0]->getId(),
+                ],
+            ],
+            $user,
+            $response
+        );
+    }
+
+    public function testCantRejectForeignPoll(): void
+    {
+        $this->expectExceptionMessage('User is not allowed to answer to this poll');
+
+        $pollDefinition = [
+            'title' => 'test poll',
+            'userIds' => [1],
+            'publishedFrom' => strtotime('-2 weeks'),
+            'publishedTo' => strtotime('+2 weeks'),
+            'questions' => [
+                [
+                    'type' => 'rated',
+                    'text' => 'How do you like this test?',
+                    'maximum' => 10,
+                    'dontCommentSince' => 5,
+                ],
+            ],
+        ];
+        /** @var PollController $controller */
+        $controller = self::$application->createControllerByID('poll');
+        $poll = $controller->actionCreate($pollDefinition);
+
+        $user = $this->createMock(User::class);
+        $user->method('getId')->willReturn(2);
+        $user->method('__get')->with('id')->willReturn(2);
+        $user->method('getLicenseId')->willReturn(2);
+
+        $response = $this->createMock(Response::class);
+        $controller->actionReject($poll->getId(), $user, $response);
     }
 
     private static function dbClear(): void

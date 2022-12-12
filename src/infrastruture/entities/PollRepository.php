@@ -135,10 +135,7 @@ final class PollRepository implements PollRepositoryInterface
      */
     public function addAnswer(ClientAnswerChange $answer): void
     {
-        $pollRecord = PollRecord::findOne($answer->getPollId());
-        if ($pollRecord === null || (count((array) $pollRecord->user_ids) > 0 && in_array($answer->getUserId(), (array) $pollRecord->user_ids, true))) {
-            throw new DomainDataCorruptionException('User is not allowed to answer to this poll');
-        }
+        $this->checkCanBeAnswered($answer->getPollId(), $answer->getUserId());
 
         /** @var Transaction $transaction */
         $transaction = $this->connection->beginTransaction();
@@ -208,6 +205,7 @@ final class PollRepository implements PollRepositoryInterface
 
     public function addRejection(int $pollId, int $userId, $licenseId): void
     {
+        $this->checkCanBeAnswered($pollId, $userId);
         $answerRecord = new ClientAnswerRecord();
         $answerRecord->setAttributes(
             [
@@ -276,5 +274,13 @@ final class PollRepository implements PollRepositoryInterface
         }
 
         return $result;
+    }
+
+    private function checkCanBeAnswered(int $pollId, int $userId): void
+    {
+        $pollRecord = PollRecord::findOne($pollId);
+        if ($pollRecord === null || (!$pollRecord->user_ids->isEmpty() && !in_array($userId, $pollRecord->user_ids->toArray(), true))) {
+            throw new DomainDataCorruptionException('User is not allowed to answer to this poll');
+        }
     }
 }
