@@ -14,6 +14,7 @@ use PHPUnit\Framework\TestCase;
 use yii\console\Application;
 use yii\db\Connection;
 use yii\web\HttpException;
+use yii\web\Request;
 use yii\web\Response;
 
 final class PollControllerTest extends TestCase
@@ -21,6 +22,19 @@ final class PollControllerTest extends TestCase
     use Assert;
 
     private static $application;
+
+    /**
+     * @param array $data
+     *
+     * @return Request
+     */
+    public function getRequest(array $data): Request
+    {
+        $_POST = $data;
+        $_POST['_method'] = 'POST';
+
+        return new Request();
+    }
 
     public static function setUpBeforeClass(): void
     {
@@ -35,7 +49,7 @@ final class PollControllerTest extends TestCase
                 'components' => [
                     'db' => Connection::class,
                 ],
-            ] + require dirname(__DIR__, 2) . '/config/main.php'
+            ] + require dirname(__DIR__, 2) . '/config/web.php'
         );
 
         parent::setUpBeforeClass();
@@ -484,8 +498,9 @@ final class PollControllerTest extends TestCase
         }
 
         $controller = self::$application->createControllerByID('poll');
+        $request = $this->getRequest($data);
         self::assertInstanceOf(PollController::class, $controller);
-        self::assertInstanceOf(Poll::class, $controller->actionCreate($data));
+        self::assertInstanceOf(Poll::class, $controller->actionCreate($request));
     }
 
     public function gettingDataProvider(): array
@@ -714,10 +729,9 @@ final class PollControllerTest extends TestCase
     {
         /** @var PollController $controller */
         $controller = self::$application->createControllerByID('poll');
-        $response = $this->createMock(Response::class);
-        $response->method('setStatusCode')->willReturn($response);
         foreach ($pollsToCreate as $data) {
-            $controller->actionCreate($data, $response);
+            $request = $this->getRequest($data);
+            self::assertInstanceOf(Poll::class, $controller->actionCreate($request));
         }
 
         $poll = $controller->actionGet();
@@ -819,7 +833,8 @@ final class PollControllerTest extends TestCase
         ];
         /** @var PollController $controller */
         $controller = self::$application->createControllerByID('poll');
-        $poll = $controller->actionCreate($pollData);
+        $request = $this->getRequest($pollData);
+        $poll = $controller->actionCreate($request);
 
         $data = [];
         foreach ($answers as $questionText => $answerDefinition) {
@@ -850,7 +865,8 @@ final class PollControllerTest extends TestCase
                 ->with(201)
                 ->willReturn($response);
         }
-        $controller->actionAnswer($poll->getId(), $data, self::$application->get('user'), $response);
+        $request = $this->getRequest($data);
+        $controller->actionAnswer($poll->getId(), $request, self::$application->get('user'), $response);
     }
 
     public function testCantGetAnswered(): void
@@ -884,24 +900,30 @@ final class PollControllerTest extends TestCase
         ];
         /** @var PollController $controller */
         $controller = self::$application->createControllerByID('poll');
-        $pollCommon = $controller->actionCreate($pollCommonDefinition);
-        $pollPersonal = $controller->actionCreate($pollPersonalDefinition);
-        $pollActual = $controller->actionGet();
 
+        $request = $this->getRequest($pollCommonDefinition);
+        $pollCommon = $controller->actionCreate($request);
+
+        $request = $this->getRequest($pollPersonalDefinition);
+        $pollPersonal = $controller->actionCreate($request);
+
+        $pollActual = $controller->actionGet();
         self::assertContainsOnlyInstancesOf(Poll::class, [$pollCommon, $pollPersonal, $pollActual]);
         self::assertEquals($pollPersonal->getId(), $pollActual->getId(), 'The first poll must be the personal one');
 
         $response = $this->createMock(Response::class);
         $response->method('setStatusCode')->willReturn($response);
 
+        $data = [
+            [
+                'questionId' => $pollActual->getQuestions()[0]->getId(),
+                'answerId' => $pollActual->getQuestions()[0]->getAnswers()[0]->getId(),
+            ],
+        ];
+        $request = $this->getRequest($data);
         $controller->actionAnswer(
             $pollActual->getId(),
-            [
-                [
-                    'questionId' => $pollActual->getQuestions()[0]->getId(),
-                    'answerId' => $pollActual->getQuestions()[0]->getAnswers()[0]->getId(),
-                ],
-            ],
+            $request,
             self::$application->get('user'),
             $response
         );
@@ -910,14 +932,16 @@ final class PollControllerTest extends TestCase
         self::assertInstanceOf(Poll::class, $pollActual);
         self::assertEquals($pollCommon->getId(), $pollActual->getId(), 'When the personal poll is answered, only the common one is available');
 
+        $data = [
+            [
+                'questionId' => $pollActual->getQuestions()[0]->getId(),
+                'answerId' => $pollActual->getQuestions()[0]->getAnswers()[0]->getId(),
+            ],
+        ];
+        $request = $this->getRequest($data);
         $controller->actionAnswer(
             $pollActual->getId(),
-            [
-                [
-                    'questionId' => $pollActual->getQuestions()[0]->getId(),
-                    'answerId' => $pollActual->getQuestions()[0]->getAnswers()[0]->getId(),
-                ],
-            ],
+            $request,
             self::$application->get('user'),
             $response
         );
@@ -943,7 +967,8 @@ final class PollControllerTest extends TestCase
         ];
         /** @var PollController $controller */
         $controller = self::$application->createControllerByID('poll');
-        $poll = $controller->actionCreate($pollDefinition);
+        $request = $this->getRequest($pollDefinition);
+        $poll = $controller->actionCreate($request);
         $response = $this->createMock(Response::class);
         $response->expects(self::once())->method('setStatusCode')->willReturn($response);
         $controller->actionReject($poll->getId(), self::$application->get('user'), $response);
@@ -968,28 +993,26 @@ final class PollControllerTest extends TestCase
         ];
         /** @var PollController $controller */
         $controller = self::$application->createControllerByID('poll');
-        $poll = $controller->actionCreate($pollDefinition);
+        $request = $this->getRequest($pollDefinition);
+        $poll = $controller->actionCreate($request);
         $response = $this->createMock(Response::class);
         $response->expects(self::once())->method('setStatusCode')->willReturn($response);
+        $data = [
+            [
+                'questionId' => $poll->getQuestions()[0]->getId(),
+                'answerId' => $poll->getQuestions()[0]->getAnswers()[0]->getId(),
+            ],
+        ];
+        $request = $this->getRequest($data);
         $controller->actionAnswer(
             $poll->getId(),
-            [
-                [
-                    'questionId' => $poll->getQuestions()[0]->getId(),
-                    'answerId' => $poll->getQuestions()[0]->getAnswers()[0]->getId(),
-                ],
-            ],
+            $request,
             self::$application->get('user'),
             $response
         );
         $controller->actionAnswer(
             $poll->getId(),
-            [
-                [
-                    'questionId' => $poll->getQuestions()[0]->getId(),
-                    'answerId' => $poll->getQuestions()[0]->getAnswers()[0]->getId(),
-                ],
-            ],
+            $request,
             self::$application->get('user'),
             $response
         );
@@ -1014,7 +1037,8 @@ final class PollControllerTest extends TestCase
         ];
         /** @var PollController $controller */
         $controller = self::$application->createControllerByID('poll');
-        $poll = $controller->actionCreate($pollDefinition);
+        $request = $this->getRequest($pollDefinition);
+        $poll = $controller->actionCreate($request);
         $response = $this->createMock(Response::class);
         $response->expects(self::once())->method('setStatusCode')->willReturn($response);
         $controller->actionReject($poll->getId(), self::$application->get('user'), $response);
@@ -1041,7 +1065,8 @@ final class PollControllerTest extends TestCase
         ];
         /** @var PollController $controller */
         $controller = self::$application->createControllerByID('poll');
-        $poll = $controller->actionCreate($pollDefinition);
+        $request = $this->getRequest($pollDefinition);
+        $poll = $controller->actionCreate($request);
 
         $user = $this->createMock(User::class);
         $user->method('getId')->willReturn(2);
@@ -1049,14 +1074,16 @@ final class PollControllerTest extends TestCase
         $user->method('getLicenseId')->willReturn(2);
 
         $response = $this->createMock(Response::class);
+        $data = [
+            [
+                'questionId' => $poll->getQuestions()[0]->getId(),
+                'answerId' => $poll->getQuestions()[0]->getAnswers()[0]->getId(),
+            ],
+        ];
+        $request = $this->getRequest($data);
         $controller->actionAnswer(
             $poll->getId(),
-            [
-                [
-                    'questionId' => $poll->getQuestions()[0]->getId(),
-                    'answerId' => $poll->getQuestions()[0]->getAnswers()[0]->getId(),
-                ],
-            ],
+            $request,
             $user,
             $response
         );
@@ -1082,7 +1109,8 @@ final class PollControllerTest extends TestCase
         ];
         /** @var PollController $controller */
         $controller = self::$application->createControllerByID('poll');
-        $poll = $controller->actionCreate($pollDefinition);
+        $request = $this->getRequest($pollDefinition);
+        $poll = $controller->actionCreate($request);
 
         $user = $this->createMock(User::class);
         $user->method('getId')->willReturn(2);

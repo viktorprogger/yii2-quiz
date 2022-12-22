@@ -20,6 +20,7 @@ use Yii;
 use yii\filters\auth\HttpBearerAuth;
 use yii\web\BadRequestHttpException;
 use yii\web\Controller;
+use yii\web\Request;
 use yii\web\Response;
 use yii\web\User;
 
@@ -77,8 +78,9 @@ final class PollController extends Controller
      *
      * @throws BadRequestHttpException
      */
-    public function actionCreate(array $poll): Poll
+    public function actionCreate(Request $request): Poll
     {
+        $poll = $request->getBodyParams();
         try {
             return $this->pollRepository->create($this->createPollFromArray($poll));
         } catch (DomainDataCorruptionException $exception) {
@@ -116,8 +118,9 @@ final class PollController extends Controller
      *
      * @throws BadRequestHttpException
      */
-    public function actionUpdate(int $id, array $poll, Response $response): Poll
+    public function actionUpdate(int $id, Request $request, Response $response): Poll
     {
+        $poll = $request->getBodyParams();
         try {
             return $this->pollRepository->update($id, $this->createPollFromArray($poll));
         } catch (DomainDataCorruptionException $exception) {
@@ -136,8 +139,10 @@ final class PollController extends Controller
      *
      * @throws BadRequestHttpException
      */
-    public function actionAnswer(int $pollId, array $answers, User $user, Response $response): Response
+    public function actionAnswer(int $pollId, Request $request, User $user, Response $response): Response
     {
+        $answers = $request->getBodyParams();
+
         try {
             $answerCollection = [];
             foreach ($answers as $index => $definition) {
